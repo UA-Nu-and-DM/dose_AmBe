@@ -1,0 +1,17 @@
+Number of hits out of range: 2624860
+Number of hits in run: 35949952
+Total equivalent energy deposited in phantom: 2.2602e+09 keV
+Total equivalent energy deposited in hottest 1000 g: 5.83877e+08 keV
+Total equivalent energy deposited in hottest 100 g: 9.69213e+07 keV
+Total equivalent energy deposited in hottest 10 g: 1.36984e+07 keV
+Total equivalent energy deposited in hottest 1 g: 1.78844e+06 keV
+rank, total equivalent energy (keV),(uncertainty (keV)),x,y,z: 0 293562 (452.685) 16.25 5.25 11.25
+rank, total equivalent energy (keV),(uncertainty (keV)),x,y,z: 1 243184 (388.718) 15.75 2.75 -7.25
+rank, total equivalent energy (keV),(uncertainty (keV)),x,y,z: 2 226484 (187.528) 18.75 6.75 3.75
+rank, total equivalent energy (keV),(uncertainty (keV)),x,y,z: 3 220864 (146.782) 16.25 -0.75 -5.75
+rank, total equivalent energy (keV),(uncertainty (keV)),x,y,z: 4 207204 (179.951) 16.25 5.25 0.75
+rank, total equivalent energy (keV),(uncertainty (keV)),x,y,z: 5 206764 (485.917) 20.25 -0.75 3.25
+rank, total equivalent energy (keV),(uncertainty (keV)),x,y,z: 6 195525 (388.973) 18.25 0.75 2.25
+rank, total equivalent energy (keV),(uncertainty (keV)),x,y,z: 7 194850 (142.144) 19.75 -9.25 6.25
+rank, total equivalent energy (keV),(uncertainty (keV)),x,y,z: 8 191721 (190.094) 18.75 0.25 0.75
+rank, total equivalent energy (keV),(uncertainty (keV)),x,y,z: 9 191605 (159.764) 16.75 -5.25 -4.25
