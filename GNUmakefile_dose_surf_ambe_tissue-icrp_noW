@@ -1,0 +1,24 @@
+
+name := dose_surf_ambe_tissue-icrp_noW
+G4TARGET := $(name)
+G4EXLIB := true
+
+ifndef G4INSTALL
+  G4INSTALL = /mnt/raid5/users/mfedkevych/dose_ambe
+endif
+
+CPPFLAGS += -lG4error_propagation
+CPPFLAGS += -DKL_USE_ROOT=1 $(shell root-config --cflags)
+EXTRALIBS += $(shell root-config --libs)
+
+
+.PHONY: all
+all: lib bin
+
+include $(G4INSTALL)/config/binmake.gmk
+
+
+visclean:
+	rm -f g4*.prim g4*.eps g4*.wrl
+	rm -f .DAWN_*
+

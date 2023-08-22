@@ -1,0 +1,19 @@
+#!/bin/sh
+# define environment variables
+
+source /mnt/raid5/users/mfedkevych/geant4.10.04.p02/bin/geant4.sh
+source /mnt/raid5/users/mfedkevych/geant4.10.04.p02/share/Geant4-10.4.2/geant4make/geant4make.sh
+
+# go to root directory
+cd /mnt/raid5/users/mfedkevych/dose_ambe
+# copy in correct makefile
+cp GNUmakefile_dose_surf_ambe_tissue-icrp GNUmakefile
+# set up source files
+cd src
+cp ExN03DetectorConstruction.cc_AmBe_outer_W_capsule_surf_dose_tissue-icrp_neutrons  ExN03DetectorConstruction.cc
+cp ExN03PrimaryGeneratorAction.cc_HEPEvt_AmBe_outer_W_capsule ExN03PrimaryGeneratorAction.cc
+cp ExN03SteppingAction.cc_dose_tissue ExN03SteppingAction.cc
+cd ..
+# build with debug symbols and position-independent code enabled
+make clean
+make CXXFLAGS="-g -fPIC"
