@@ -1,0 +1,363 @@
+#include "ExN03DetectorConstruction.hh"
+
+#include <fstream>
+using namespace std;
+
+#include "G4Material.hh"
+#include "G4Element.hh"
+#include "G4Isotope.hh"
+
+#include "G4Box.hh"
+#include "G4LogicalVolume.hh"
+#include "G4PVPlacement.hh"
+#include "G4VPhysicalVolume.hh"
+#include "G4Tubs.hh"
+#include "G4Cons.hh"
+
+#include "G4UnionSolid.hh"
+#include "G4SubtractionSolid.hh"
+
+#include "G4Transform3D.hh"
+#include "G4GeometryManager.hh"
+#include "G4PhysicalVolumeStore.hh"
+#include "G4LogicalVolumeStore.hh"
+#include "G4SolidStore.hh"
+
+#include "G4VisAttributes.hh"
+#include "G4Colour.hh"
+#include "G4NistManager.hh"
+#include <vector>
+ExN03DetectorConstruction::ExN03DetectorConstruction() 
+{
+ worldsize=2.0*CLHEP::m;
+   }
+
+ 
+ExN03DetectorConstruction::~ExN03DetectorConstruction() {}
+
+
+
+G4VPhysicalVolume* ExN03DetectorConstruction::Construct()
+{
+  return ConstructCounter();
+}
+
+
+
+G4VPhysicalVolume* ExN03DetectorConstruction::ConstructCounter()
+{
+
+  // Clean old geometry, if any
+  //
+  G4GeometryManager::GetInstance()->OpenGeometry();
+  G4PhysicalVolumeStore::GetInstance()->Clean();
+  G4LogicalVolumeStore::GetInstance()->Clean();
+  G4SolidStore::GetInstance()->Clean();
+
+  //make materials
+  ///////////////////////////////////////////////////////////
+  G4int nelements;
+  G4double density,a,z;
+  G4String name,symbol;
+
+
+G4double lead_thickness=2.54;
+G4double pet_thickness=2.54;
+
+
+  G4cout << "Pb, PET thicknesses (cm): " << lead_thickness <<","<<pet_thickness<<G4endl;
+  G4NistManager* man = G4NistManager::Instance();
+  //Air
+  G4Material* air = man->FindOrBuildMaterial("G4_AIR");
+  //Water
+  G4Material* water = man->FindOrBuildMaterial("G4_WATER");
+  //Water
+  G4Material* tissue = man->FindOrBuildMaterial("G4_TISSUE_SOFT_ICRP");
+ //Polyethylene
+  G4Material* pet = man->FindOrBuildMaterial("G4_POLYETHYLENE");
+  //Lead
+   G4Material* lead = man->FindOrBuildMaterial("G4_Pb");
+ 
+ 
+  //SS
+  G4Element* Fe = new G4Element(name="Iron",symbol="Fe",z=26,a=55.845*CLHEP::g/CLHEP::mole);
+  G4Element* Ni = new G4Element(name="Nickel",symbol="Ni",28,58.693*CLHEP::g/CLHEP::mole);   
+  G4Element* Cr = new G4Element(name="Chromium",symbol="Cr",24,51.996*CLHEP::g/CLHEP::mole);
+  G4Material* SS = new G4Material(name="Stainless",density=7.87*CLHEP::g/CLHEP::cm3,nelements=3);
+  SS->AddElement(Fe,71.*CLHEP::perCent);
+  SS->AddElement(Cr,19.*CLHEP::perCent);
+  SS->AddElement(Ni,10.*CLHEP::perCent);
+
+  //Tungsten alloy
+  G4Element* W = new G4Element(name="Tungsten",symbol="W",74,183.84*CLHEP::g/CLHEP::mole);
+  G4Material* Walloy = new G4Material(name="TungstenAlloy",density=18.51*CLHEP::g/CLHEP::cm3,nelements=3);
+  Walloy->AddElement(W,97.*CLHEP::perCent);
+  Walloy->AddElement(Ni,2.1*CLHEP::perCent);
+  Walloy->AddElement(Fe,0.9*CLHEP::perCent);
+
+
+  auto Am241 = new G4Element("Americium","Am",95,241.057*CLHEP::g/CLHEP::mole);
+  auto O = new G4Element("Oxygen","O",8,16.00*CLHEP::g/CLHEP::mole);
+  auto Be = new G4Element("Beryllium","Be", 4., 9.1218*CLHEP::g/CLHEP::mole);
+
+  //americum di-oxide
+  //
+  auto AmO2 = new G4Material("Americium_Di-Oxide",11.68*CLHEP::g/CLHEP::cm3,2);
+  AmO2->AddElement(Am241,88.4*CLHEP::perCent);
+  AmO2->AddElement(O,11.6*CLHEP::perCent);
+
+  // add new material here
+
+
+  //americum di-oxide with beryllium mixture (based om AmBe1 description in thesis of I. Ostrovsky)
+  //density: 0.199 g/cm3: 0.127 mg mixture mass pressed into a cylindrical volume with d=0.57 mm and h=2.5 mm
+  //atomic ratio rescaled from AmO2 for 140:10 Am to Be ratio in the micture
+  auto AmO2_Be = new G4Material("Americium_Di-Oxide_Beryllium_mixture",0.199*CLHEP::g/CLHEP::cm3,3);
+  AmO2_Be->AddElement(Am241,83.15*CLHEP::perCent);
+  AmO2_Be->AddElement(O,10.91*CLHEP::perCent);
+  AmO2_Be->AddElement(Be,5.94*CLHEP::perCent);
+  
+  
+  /////////////////////////////////////////////////////////////
+
+
+  //make objects
+  //////////////////////////////////////////////////////////////
+
+//source volume is 5 mm OD by 10 mm height
+//inner capsule volume (W alloy) is 9 mm OD by 17 mm height (wall thickness is 2 mm)
+//middle capsule volume (W alloy) is 13 mm OD by 28 mm height (wall thickness is 2 mm)
+//outer capsule volume (SS) is 16 mm OD by 43 mm height (wall thickness is 1.5 mm)
+//tissue volume is 30 cm in diameter by 100 cm in height positioned just outside of lead box
+//Pb box 2.54 cm (1 in) wall thickness.  Cube with outer dimensions 30 cm x 30 cm x 30 cm
+//Polyethylene liner of adjustable thickness.
+//no allowance for thermal expansion
+
+
+   float unit=1*CLHEP::mm;
+   float ssShieldOuterDia = 2.01*unit;
+   float ssShieldInnerDia = 1.22*unit;
+   float ssShieldTopVoidHeight = 0.89*unit;
+   float ssShieldTopVoidDia = 1.605*unit;
+   float ssShieldBottomVoidHeight = 0.25267*unit; // ssShieldInnerDia/2*tg(22.5deg) if the bore was made with 135deg point angle drill bit
+   float ssShieldCentralVoidHeight = 5.11*unit-ssShieldBottomVoidHeight;
+   float ssShieldHeight = 6.50*unit;
+
+   float ssShieldLidBottomDia = 1.6*unit;
+   float ssShieldLidBottomHeight = 1.02*unit;
+   float ssShieldLidTopHeight = 5*0.2*unit;
+   float ssShieldLidTopDia = 1.4*unit;
+
+   float wShieldOuterDia = 1.13*unit;
+   float wShieldHeight = 4.19*unit;
+   float wShieldBoreHeight = 4*unit;
+
+   float wWireDia = 0.5*unit;
+   float wWireHeight = 1.8*unit;
+   float wWireTop = 0.3*unit;
+   float wWireOffset = wShieldBoreHeight/2-wWireHeight/2+wWireTop;
+
+   float srcCoreDia = 0.57*unit;
+   float srcCoreHeight = wShieldBoreHeight-(wWireHeight-wWireTop);
+   float srcCoreOffset = 0.5*wShieldHeight - (wWireHeight-wWireTop)-0.5*srcCoreHeight;
+
+
+
+
+
+
+
+
+
+
+
+
+ G4double tsafe=lead_thickness*CLHEP::cm;
+ G4double xsafe=30.0*CLHEP::cm;
+ G4double ysafe=30.0*CLHEP::cm;
+ G4double zsafe=30.0*CLHEP::cm;
+ G4double tliner=pet_thickness*CLHEP::cm;
+ /*G4double xliner=xsafe-2.0*tsafe;
+ G4double yliner=ysafe-2.0*tsafe;
+ G4double zliner=zsafe-2.0*tsafe;
+ G4double xair=xliner-2.0*tliner;
+ G4double yair=yliner-2.0*tliner;
+ G4double zair=zliner-2.0*tliner;*/
+
+
+ G4double xair=xsafe-2.0*tsafe;
+ G4double yair=ysafe-2.0*tsafe;
+ G4double zair=zsafe-2.0*tsafe;
+ 
+ 
+ 
+
+
+
+
+
+
+
+
+ G4double dtissue=30.0*CLHEP::cm;
+ G4double htissue=100.0*CLHEP::cm;
+//No z,y offset for tissue and offset in x to start 0.01 cm outside lead safe
+ float zoffsettissue=0.;
+ float xoffsettissue=0.5*dtissue +0.5*xsafe;
+
+//No x,y,z offset for lead safe
+//No x,y,z offset of pet liner
+
+//No x,y,z offset of air environment of sources
+
+ //world
+ 
+  G4Tubs* world_solid = new G4Tubs("world_solid",0.,0.5*worldsize,0.5*worldsize,0.,2.0*CLHEP::pi);
+  G4LogicalVolume* world_log = new G4LogicalVolume(world_solid,air,"world_log");
+  world_phys = new G4PVPlacement(0,G4ThreeVector(0,0,0),world_log,"world_phys",0,false,0);
+
+//lead safe
+
+  G4Box* safe_solid = new G4Box("safe_solid",0.5*xsafe,0.5*ysafe,0.5*zsafe);
+  auto safe_void = new G4Box("safe_void",0.5*xsafe-tsafe,0.5*ysafe-tsafe,0.5*zsafe-tsafe);
+  auto safe_box = new G4SubtractionSolid("safe_box", safe_solid, safe_void, 0, G4ThreeVector(0,0,0));
+
+  G4LogicalVolume* safe_log = new G4LogicalVolume(safe_box,lead,"safe_log");
+  safe_phys = new G4PVPlacement(0,G4ThreeVector(0,0,0),safe_log,"safe_phys",world_log,false,0);
+
+
+/*
+//pet liner
+
+  G4Box* liner_solid = new G4Box("liner_solid",0.5*xliner,0.5*yliner,0.5*zliner);
+  auto liner_void = new G4Box("liner_void",0.5*xliner-tliner,0.5*yliner-tliner,0.5*zliner-tliner);
+  auto liner_box = new G4SubtractionSolid("liner_box", liner_solid, liner_void, 0, G4ThreeVector(0,0,0));
+
+  G4LogicalVolume* liner_log = new G4LogicalVolume(liner_box,pet,"liner_log");
+  liner_phys = new G4PVPlacement(0,G4ThreeVector(0,0,0),liner_log,"liner_phys",safe_log,false,0);
+
+//air inside liner and around sources
+
+  G4Box *air_solid = new G4Box("air_solid",0.5*xair,0.5*yair,0.5*zair);
+  G4LogicalVolume* air_log = new G4LogicalVolume(air_solid,air,"air_log");
+  air_phys = new G4PVPlacement(0,G4ThreeVector(0,0,0),air_log,"air_phys",liner_log,false,0);*/
+
+//air inside safe and around source
+
+  G4Box *air_solid = new G4Box("air_solid",0.5*xair,0.5*yair,0.5*zair);
+  G4LogicalVolume* air_log = new G4LogicalVolume(air_solid,air,"air_log");
+  air_phys = new G4PVPlacement(0,G4ThreeVector(0,0,0),air_log,"air_phys",safe_log,false,0);
+
+  
+   //auto positionSS = G4ThreeVector(0.5*wCapsBaseOuterDia,0*CLHEP::mm,-0.5*wCapsCapHeight);
+   auto positionSS = G4ThreeVector(0*CLHEP::mm,0*CLHEP::mm,0*CLHEP::mm);
+
+   //outer SS capsule
+
+
+   auto ssShieldCylinder = new G4Tubs("ssShieldCylinder",0.,0.5*ssShieldOuterDia,0.5*ssShieldHeight,0.,2.0*CLHEP::pi);
+
+   auto ssShieldVoidTop = new G4Tubs("ssShieldVoidTop",0.,0.5*ssShieldTopVoidDia,0.5*ssShieldTopVoidHeight,0.,2.0*CLHEP::pi);
+   auto ssShieldVoidCenter = new G4Tubs("ssShieldVoidCenter",0.,0.5*ssShieldInnerDia,0.5*(ssShieldCentralVoidHeight+0.002*unit),0.,2.0*CLHEP::pi);
+   auto ssShieldVoidBottom = new G4Cons("ssShieldVoidBottom", 0., 0, 0, 0.5*ssShieldInnerDia, 0.5*ssShieldBottomVoidHeight,0.,2.0*CLHEP::pi);
+
+
+   auto SubtractssShieldVoidTop = new G4SubtractionSolid("SubtractssShieldVoidTop", ssShieldCylinder, ssShieldVoidTop, 0, G4ThreeVector(0,0.,0.5*ssShieldHeight-0.5*ssShieldTopVoidHeight));
+   auto SubtractssShieldVoidCenter = new G4SubtractionSolid("SubtractssShieldVoidCenter", SubtractssShieldVoidTop, ssShieldVoidCenter, 0, G4ThreeVector(0,0.,0.5*ssShieldHeight-ssShieldTopVoidHeight-0.5*ssShieldCentralVoidHeight));
+
+   auto ssShieldS = new G4SubtractionSolid("ssShieldS", SubtractssShieldVoidCenter, ssShieldVoidBottom, 0, G4ThreeVector(0,0.,0.5*ssShieldHeight-ssShieldTopVoidHeight-ssShieldCentralVoidHeight-0.5*ssShieldBottomVoidHeight));
+
+   auto ssShield_log = new G4LogicalVolume(ssShieldS, air,"ssShieldLV");
+   ssShield_phys = new G4PVPlacement(0,positionSS,ssShield_log,"ssShieldPV",air_log,false,0,true);
+
+   auto visAttSS = new G4VisAttributes(G4Colour(0.8,0.8,0.7,0.5));
+   ssShield_log->SetVisAttributes(visAttSS);
+
+
+
+   //Lid of the outer SS capsule
+
+
+
+
+   auto ssShieldLidSTop = new G4Tubs("ssShieldCylinder",0.,0.5*ssShieldLidTopDia,0.5*ssShieldLidTopHeight,0.,2.0*CLHEP::pi);
+   auto ssShieldLidSBottom = new G4Tubs("ssShieldCylinder",0.,0.5*ssShieldLidBottomDia,0.5*ssShieldLidBottomHeight,0.,2.0*CLHEP::pi);
+   auto ssShieldLidS =  new G4UnionSolid("ssShieldLidS", ssShieldLidSBottom, ssShieldLidSTop,0,G4ThreeVector(0,0.,0.5*ssShieldLidBottomHeight+0.5*ssShieldLidTopHeight)); 
+
+
+   auto ssShieldLid_log = new G4LogicalVolume(ssShieldLidS, air,"ssShieldLidLV");
+   ssShieldLid_phys = new G4PVPlacement(0,G4ThreeVector(0,0,0.5*ssShieldHeight-0.5*ssShieldTopVoidHeight),ssShieldLid_log,"ssShieldLidPV",ssShield_log,false,0,true);
+
+
+   ssShieldLid_log->SetVisAttributes(visAttSS);
+  
+    //inner W capsule
+
+
+   auto wShieldCylinder = new G4Tubs("wShieldCylinder",0.,0.5*wShieldOuterDia,0.5*wShieldHeight,0.,2.0*CLHEP::pi);
+
+   auto wShieldVoid = new G4Tubs("wShieldVoid",0.,0.5*srcCoreDia,0.5*wShieldBoreHeight,0.,2.0*CLHEP::pi);
+
+
+   auto wShieldS = new G4SubtractionSolid("wShieldS", wShieldCylinder, wShieldVoid, 0, G4ThreeVector(0,0.,0.5*wShieldHeight-0.5*wShieldBoreHeight));
+
+
+
+
+
+
+   auto wShield_log = new G4LogicalVolume(wShieldS, air,"wShieldLV");
+   wShield_phys = new G4PVPlacement(0,G4ThreeVector(0,0,0.5*ssShieldHeight-ssShieldTopVoidHeight-0.5*ssShieldCentralVoidHeight),wShield_log,"wShieldPV",ssShield_log,false,0,true);
+
+   auto visAttw = new G4VisAttributes(G4Colour(0.7,0.7,0.9,0.75));
+   wShield_log->SetVisAttributes(visAttw);
+
+
+   //SS lid of the inner W capsule
+
+
+   auto wShieldLidS = new G4Tubs("wShieldS",0.,0.5*wWireDia,0.5*wWireHeight,0.,2.0*CLHEP::pi);
+   auto wShieldLid_log = new G4LogicalVolume(wShieldLidS, air,"wShieldLidLV");
+   wShieldLid_phys = new G4PVPlacement(0,G4ThreeVector(0,0,wWireOffset),wShieldLid_log,"wShieldLidPV",ssShield_log,false,0,true);
+
+
+   wShieldLid_log->SetVisAttributes(visAttw);
+
+
+   //source core
+   auto srcCoreS = new G4Tubs("srcCoreS",0.,0.5*srcCoreDia,0.5*srcCoreHeight,0.,2.0*CLHEP::pi);
+   auto srcCore_log = new G4LogicalVolume(srcCoreS, air,"srcCoreLV");
+   srcCore_phys = new G4PVPlacement(0,G4ThreeVector(0,0,srcCoreOffset),srcCore_log,"srcCorePV",wShield_log,false,0,true);
+
+   auto visAttsrcCore = new G4VisAttributes( G4Colour(0.5,0.5,0.6,1.0) );
+   srcCore_log->SetVisAttributes( visAttsrcCore);  
+
+  
+
+  //tissue
+  G4Tubs *tissueslug = new G4Tubs("tissueslug",0.,0.5*dtissue,0.5*htissue,0.,2.0*CLHEP::pi);
+  G4LogicalVolume *tissueslug_log = new G4LogicalVolume(tissueslug,tissue,"tissueslug_log");
+  tissueslug_phys=new G4PVPlacement(0,G4ThreeVector(xoffsettissue,0,0),tissueslug_log,"tissueslug__phys",world_log,false,0);
+
+    G4cout << "Detector defined per ExN03DetectorConstruction.cc_walloy_ss_surf_dose_tissue-icrp" << G4endl; 
+
+   // Visualization attributes
+  world_log->SetVisAttributes (G4VisAttributes::Invisible);
+
+
+  G4VisAttributes* genericVisAtt= new G4VisAttributes(G4Colour(1.0,1.0,1.0));
+  genericVisAtt->SetVisibility(true);
+  tissueslug_log->SetVisAttributes(genericVisAtt);
+
+  auto visAttSafe = new G4VisAttributes( G4Colour(1.0,1.0,1.0) );
+  visAttSafe->SetVisibility(true);
+  safe_log->SetVisAttributes(visAttSafe);
+
+  //auto visAttPETLiner = new G4VisAttributes( G4Colour(1.0,0.5,0.5) );
+  //visAttPETLiner->SetVisibility(true);
+  //liner_log->SetVisAttributes(visAttPETLiner);
+ 
+  return world_phys;
+}
+
+
