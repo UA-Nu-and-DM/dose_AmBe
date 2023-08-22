@@ -1,0 +1,14 @@
+#uncomment the following 4 lines to get visualization files (.wrl); comment if you need to simulate a large amount of particles, e.g. > 1000
+#/vis/open VRML2FILE
+#/vis/drawVolume
+#/vis/scene/add/trajectories
+#/vis/scene/endOfEventAction accumulate
+
+/control/verbose 0
+/run/verbose 0
+/event/verbose 0
+/tracking/verbose 0
+/run/setCut 0.001 mm
+/run/particle/dumpCutValues 1
+/run/beamOn 500000
+exit
