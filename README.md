@@ -27,7 +27,7 @@ cluster and must be revised to be run by another user at Alabama or run on anoth
 Check build_dose_<...>.job, dose_<...>.cc, GNUmakefile_dose_<...>, batch.job files.
 ------------------------------------------------------------------------------------------------
 
-1. Download and unpack the dose_AmBe.tar.gz archive, e.g. run "tar -xf dose_AmBe.tar.gz" in Linux terminal
+1. Download the code as a "dose_AmBe" folder
 2. The folder contains 8 simulation subfolders starting with "ambe" which contain simulations for different cases, and corresponding .cc files starting with "dose", make files starting with "GNUmakefile_dose", .job files starting with "build" for the following cases:
     - if the name contains "gamma" gammas are simulated, otherwise neutrons
     - if the name contains "noW" it is done for the source without the outer tungsten capsule, otherwise for the source inside the outer tungsten capsule
