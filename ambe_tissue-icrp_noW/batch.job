@@ -1,0 +1,4 @@
+cd /mnt/raid5/users/mfedkevych/dose_ambe/ambe_tissue-icrp_noW/
+source /mnt/raid5/users/mfedkevych/geant4.10.04.p02/share/Geant4-10.4.2/geant4make/geant4make.sh
+source /mnt/raid5/users/mfedkevych/geant4.10.04.p02/bin/geant4.sh
+dose_ambe_tissue-icrp_noW batch.mac

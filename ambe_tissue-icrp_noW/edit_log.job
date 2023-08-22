@@ -1,0 +1,2 @@
+sed -i '1,858d' *.o*
+sed -i '/Graphics/,$d' *.o*

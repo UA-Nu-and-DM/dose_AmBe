@@ -1,0 +1,4 @@
+#! /bin/sh
+for file in dir*/batch.o*; do
+ cp "$file" .
+done
